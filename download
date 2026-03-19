@@ -1,0 +1,738 @@
+import { useState, useCallback, useEffect, useRef } from "react";
+
+const SOURCES = {
+  consultor: { name: "Consultor", color: "#E63946", accent: "#FF6B6B" },
+  echo: { name: "L'Écho", color: "#2A9D8F", accent: "#52D1C2" },
+  training_you: { name: "Training You", color: "#E9C46A", accent: "#F4D58D" },
+  ft: { name: "Financial Times", color: "#F2CEAE", accent: "#FFE0C2" },
+  lesoir: { name: "Le Soir", color: "#7B68EE", accent: "#9D8FFF" },
+};
+
+const STEP_LABELS = ["Contexte", "Framework", "Deep Dive", "Brainstorm", "Pitch"];
+const STEP_ICONS = ["◉", "△", "◈", "⚡", "→"];
+
+const CASES = [
+  {
+    id: 1, source: "consultor", category: "M&A / Post-Merger Integration",
+    title: "McKinsey restructure sa practice Legaltech après l'acquisition de Neota Logic",
+    date: "Mars 2026",
+    contexte: {
+      body: "McKinsey a acquis Neota Logic, une plateforme d'automatisation juridique no-code, pour renforcer son offre dans le secteur juridique. Le Managing Partner de McKinsey Digital doit décider du modèle d'intégration. Neota Logic réalise ~$25M de CA, 120 employés dont 80 ingénieurs, croissance 35% YoY. Valorisation : ~8x revenue. Les 2 cofondateurs ont un earn-out de 3 ans. McKinsey a un précédent réussi : QuantumBlack (acquis en 2015, >$500M de revenus aujourd'hui, modèle semi-autonome).",
+      keyFact: "Neota Logic : $25M CA, 120 FTE, 40+ clients Magic Circle",
+      clarifyingQs: [
+        { q: "Quel est l'objectif principal de l'acquisition ?", a: "Accélérer la cross-sell de services digitaux aux clients juridiques existants — pas un play technologique pur." },
+        { q: "Y a-t-il un deadline pour la décision d'intégration ?", a: "Oui — le board veut un modèle validé d'ici 90 jours. Les clients Neota attendent de la visibilité sur la continuité produit." },
+        { q: "Quel est le risque talent principal ?", a: "80 ingénieurs sans non-compete. Benchmark : 30-40% quittent dans les 18 mois post-acquisition en consulting." },
+        { q: "Les clients Neota sont-ils aussi clients McKinsey ?", a: "Seulement 6 sur 40+ — énorme potentiel de cross-sell dans les deux sens." },
+      ],
+    },
+    framework: {
+      name: "Modèle d'Intégration Post-Acquisition",
+      why: "3 dimensions MECE : degré d'autonomie opérationnelle, synergies capturables, risques d'exécution.",
+      branches: [
+        { label: "Degré d'autonomie", children: [{ label: "Gouvernance", detail: "Reporting line, steering committee, droits de veto" }, { label: "Identité", detail: "Marque préservée vs. absorbée, culture" }, { label: "Opérations", detail: "IT, RH, budgets — séparés ou mutualisés" }] },
+        { label: "Synergies capturables", children: [{ label: "Revenue", detail: "Cross-sell, pricing power, nouveaux marchés" }, { label: "Cost", detail: "Back-office, infra cloud, support" }, { label: "Capability", detail: "Talent sharing, data assets, méthodologies" }] },
+        { label: "Risques d'exécution", children: [{ label: "Rétention talents", detail: "Ingénieurs clés, cofondateurs post-earn-out" }, { label: "Vélocité produit", detail: "Cycles release, autonomie R&D" }, { label: "Conflit culturel", detail: "Startup vs. partnership model" }] },
+      ],
+    },
+    deepDive: {
+      chosenBucket: "Risques d'exécution",
+      whyThisBucket: "Les synergies revenue sont évidentes (34 clients non-partagés). L'autonomie a un précédent (QuantumBlack). Le make-or-break c'est l'exécution : 60% des intégrations post-acquisition en consulting échouent.",
+      matchAnalysis: [
+        { dimension: "Rétention talents", caseMatch: "80 ingénieurs sans non-compete + 30-40% de départs = risque 24-32 départs. Coût remplacement : $200K/ing = $4.8-6.4M de destruction de valeur.", severity: "critique" },
+        { dimension: "Vélocité produit", caseMatch: "Neota release toutes les 2 semaines. Cycle McKinsey : 6-8 semaines. Imposer les process = vélocité -75%, clients Magic Circle partent.", severity: "haut" },
+        { dimension: "Conflit culturel", caseMatch: "Salaires Neota : $120-180K + equity. McKinsey même level : $150-200K + bonus. Incentives alignables mais mindset product vs. project = vrai friction.", severity: "moyen" },
+      ],
+    },
+    brainstorm: {
+      subProblem: "Comment retenir >85% des ingénieurs Neota dans les 24 mois tout en les intégrant progressivement dans l'écosystème McKinsey ?",
+      ideas: [
+        { idea: "Retention equity package", detail: "Vesting 3 ans indexé sur KPIs produit (NPS, adoption, uptime) — pas les métriques McKinsey classiques.", impact: "Fort", feasibility: "Fort" },
+        { idea: "Engineering autonomy charter", detail: "Par écrit : cycles release, stack tech, recrutement restent sous autorité CTO Neota.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Reverse integration", detail: "5 consultants McKinsey travaillent 6 mois chez Neota (pas l'inverse) pour respect mutuel.", impact: "Moyen", feasibility: "Fort" },
+        { idea: "Dual career track", detail: "'Technical Fellow' track pour ingénieurs seniors qui ne veulent pas devenir partners.", impact: "Moyen", feasibility: "Moyen" },
+        { idea: "Co-creation pods", detail: "2 ingénieurs Neota + 2 consultants McKinsey sur des projets client pour lien organique.", impact: "Fort", feasibility: "Fort" },
+      ],
+    },
+    elevatorPitch: {
+      recommendation: "Entité semi-autonome (modèle QuantumBlack) + Engineering Autonomy Charter + retention equity package.",
+      arguments: [
+        "QuantumBlack a fait ses preuves : >$500M revenus, 95% rétention à 3 ans",
+        "34 clients non-partagés = NPV synergies revenue $45M sur 5 ans",
+        "Retention package sur KPIs produit aligne incentives sans imposer la culture McKinsey",
+      ],
+      risks: [
+        { risk: "Départ cofondateurs post-earn-out (année 3)", mitigation: "Advisory board seat + equity dans futures acquisitions tech McKinsey" },
+        { risk: "Cannibalisation Deloitte/EY legaltech", mitigation: "Accélérer 3 pilotes Magic Circle dans les 90 jours" },
+        { risk: "Résistance partners McKinsey Legal", mitigation: "Bonus partners lié à l'adoption Neota (% missions incluant le produit)" },
+      ],
+      nextSteps: [
+        "Sem 1-2 : Signer Engineering Autonomy Charter avec CTO Neota",
+        "Sem 3-4 : Lancer retention equity pour les 80 ingénieurs",
+        "Mois 2-3 : 3 pilotes co-creation cabinets Magic Circle",
+        "Mois 6 : Review steering — KPIs : rétention >90%, 3+ missions cross-staffées",
+      ],
+    },
+  },
+  {
+    id: 2, source: "echo", category: "Procurement / Sustainability",
+    title: "Engie accélère la décarbonation de sa supply chain — programme Scope 3",
+    date: "Mars 2026",
+    contexte: {
+      body: "Le CPO d'Engie vous mandate pour structurer un programme de réduction Scope 3 via procurement. €12Mrd de spend annuel, objectif -30% d'ici 2030. Budget : €50M sur 3 ans. La CSRD impose un reporting Scope 3 détaillé dès 2026. Le CBAM impacte les fournisseurs acier/ciment. Seulement 30 top fournisseurs sont mesurés (20% du spend), le reste est estimé.",
+      keyFact: "Scope 3 = 85% de l'empreinte carbone totale d'Engie",
+      clarifyingQs: [
+        { q: "Répartition spend par catégorie ?", a: "4 catégories = 70% du Scope 3 : équipements industriels (30%), transport (20%), construction (12%), IT (8%)." },
+        { q: "Alternatives bas-carbone viables ?", a: "Transport : oui. IT : oui. Équipements : émergentes (+15-25%). Construction : limitées." },
+        { q: "Pouvoir de négociation d'Engie ?", a: "Fort en transport/IT. Moyen en construction. Faible en équipements (oligopole 3 fournisseurs = 80%)." },
+        { q: "Pression réglementaire spécifique ?", a: "CSRD reporting 2026 + CBAM impacte directement fournisseurs acier/ciment." },
+      ],
+    },
+    framework: {
+      name: "Matrice Impact Carbone × Levier Procurement",
+      why: "Deux dimensions MECE : intensité carbone par catégorie (où agir ?) × type de levier procurement (comment agir ?). Plus les enablers transversaux.",
+      branches: [
+        { label: "Où agir ?", children: [{ label: "Intensité carbone / €", detail: "tCO₂ par M€ de spend" }, { label: "Maturité alternatives", detail: "Fournisseurs bas-carbone viables ?" }, { label: "Pouvoir de négociation", detail: "Imposer des critères ou captifs ?" }] },
+        { label: "Comment agir ?", children: [{ label: "Spécification", detail: "Réduire besoin CO₂ dès le cahier des charges" }, { label: "Sélection", detail: "Scoring carbone dans les AO" }, { label: "Collaboration", detail: "Co-investir avec fournisseurs" }, { label: "Substitution", detail: "Changer fournisseur ou matériau" }] },
+        { label: "Enablers", children: [{ label: "Data & mesure", detail: "Outils calcul carbone fournisseurs" }, { label: "Gouvernance", detail: "Carbon price interne, comité arbitrage" }, { label: "Compétences", detail: "Former acheteurs, recruter sustainability" }] },
+      ],
+    },
+    deepDive: {
+      chosenBucket: "Où agir ? (Priorisation)",
+      whyThisBucket: "Avec 50+ catégories, tout attaquer = inefficace. L'analyse croisée intensité × pouvoir × maturité segmente le portefeuille en clusters actionnables.",
+      matchAnalysis: [
+        { dimension: "Transport (20% Scope 3)", caseMatch: "Alternatives matures, pouvoir fort, switching sans surcoût. Impact : -12% Scope 3 en 12 mois.", severity: "quick-win" },
+        { dimension: "Équipements (30%)", caseMatch: "Plus grosse catégorie mais alternatives +15-25%, pouvoir faible (oligopole). Levier = collaboration.", severity: "critique" },
+        { dimension: "IT (8%)", caseMatch: "Alternatives matures, pouvoir fort. Impact unitaire faible mais quick win facile + signal interne.", severity: "quick-win" },
+        { dimension: "Construction (12%)", caseMatch: "Alternatives limitées, pouvoir moyen. Bet à 3-5 ans, pas un levier immédiat.", severity: "moyen" },
+      ],
+    },
+    brainstorm: {
+      subProblem: "Comment décarboner 'équipements industriels' (30% Scope 3, €3.6Mrd) dans un oligopole de 3 fournisseurs avec alternatives +15-25% ?",
+      ideas: [
+        { idea: "Supplier Decarbonation Fund", detail: "€20M pour co-financer capex transition des 3 fournisseurs. Échange : -20% émissions sur 5 ans + prix préférentiel.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Demand pooling multi-utilities", detail: "Consortium avec EDF/Iberdrola/Enel pour volume critique justifiant l'investissement fournisseur.", impact: "Fort", feasibility: "Faible" },
+        { idea: "Redesign spécifications", detail: "Réduire specs matériaux -10-15% avec engineering (sur-engineering turbines/échangeurs).", impact: "Moyen", feasibility: "Fort" },
+        { idea: "Take-or-pay 7-10 ans", detail: "Garantir volumes aux fournisseurs qui investissent. Manque de visibilité demand = leur frein #1.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Carbon shadow price €100/t", detail: "Dans tous les business cases d'achat → alternatives vertes compétitives sur le papier.", impact: "Moyen", feasibility: "Fort" },
+      ],
+    },
+    elevatorPitch: {
+      recommendation: "3 vagues : quick wins transport/IT (0-12m), co-invest équipements (12-24m), construction long terme (24-36m).",
+      arguments: [
+        "Vague 1 : -14% Scope 3 avec ROI immédiat (transport cost-neutral, IT -5-8% coûts)",
+        "Fund €20M : ROI 3.2x via réduction exposition CBAM (€64M économies sur 10 ans)",
+        "Shadow price €100/t : change le paradigme sans investissement — carbone intégré par défaut",
+      ],
+      risks: [
+        { risk: "Résistance acheteurs 'lowest cost wins'", mitigation: "Former 100% + KPI carbone = 20% du bonus" },
+        { risk: "Fournisseurs refusent co-invest", mitigation: "Pilote avec le plus coopératif, succès comme levier" },
+        { risk: "Surcoût impacte compétitivité CT", mitigation: "Green premium B2B — 68% corporate prêts à +3-5%" },
+      ],
+      nextSteps: [
+        "Mois 1 : Cartographier émissions réelles 30 top fournisseurs",
+        "Mois 2 : AO transport scoring carbone 25%",
+        "Mois 3 : Pitcher Fund au board avec business case CBAM",
+        "Mois 6 : Review, calibrage Vague 2",
+      ],
+    },
+  },
+  {
+    id: 3, source: "training_you", category: "Digital / Private Equity",
+    title: "Bain déploie l'IA générative pour accélérer les due diligences PE",
+    date: "Février 2026",
+    contexte: {
+      body: "Le Head of PE Practice chez Bain hésite entre doubler l'investissement dans 'Bain Lens' ($15M additionnel) ou pivoter vers un vendor ($6M). Bain Lens analyse des data rooms en 48h vs. 2 semaines. $15M investis. Run cost $3M/an. 23 deals. Satisfaction 8.2/10. Trois erreurs détectées. Instance cloud isolée par deal (SOC 2). Faiblesse : documents juridiques (taux d'erreur 3x vs. financiers).",
+      keyFact: "$15M investis, 23 deals, -80% temps d'analyse, +18% WTP",
+      clarifyingQs: [
+        { q: "Coût du scaling vs. vendor ?", a: "$15M additionnel (200 deals/an) vs. $6M vendor mais perte fine-tuning propriétaire." },
+        { q: "Concurrents ?", a: "McKinsey : Kira (générique). BCG : 12-18 mois derrière. Aucun n'a le fine-tuning sectoriel." },
+        { q: "Différence perçue par les fonds ?", a: "Pricing test 8 deals : WTP +18%. Time-to-first-insight <72h = game-changer." },
+        { q: "Faiblesse principale ?", a: "Documents juridiques : erreur 3x vs. financiers. 40% du temps review managers sur le juridique." },
+      ],
+    },
+    framework: {
+      name: "Scale vs. Pivot : Tech Propriétaire",
+      why: "Sunk cost $15M. 3 blocs MECE : avantage concurrentiel (protéger ?), économie scaling (ROI ?), faisabilité (livrer ?).",
+      branches: [
+        { label: "Avantage concurrentiel", children: [{ label: "Différenciation", detail: "Avantage mesurable vs. McKinsey/BCG" }, { label: "Défendabilité", detail: "Data flywheel, switching costs" }, { label: "WTP", detail: "Les fonds payent-ils une prime ?" }] },
+        { label: "Économie", children: [{ label: "Coût incrémental", detail: "$15M scale vs. $6M vendor" }, { label: "Revenue uplift", detail: "+18% pricing, volume deals" }, { label: "Payback", detail: "Rentabilisation des $30M cumulés" }] },
+        { label: "Faisabilité", children: [{ label: "Talent", detail: "8 ML engineers, marché tendu" }, { label: "Fiabilité", detail: "Erreur juridique à résoudre" }, { label: "Compliance", detail: "SOC 2, GDPR" }] },
+      ],
+    },
+    deepDive: {
+      chosenBucket: "Avantage concurrentiel",
+      whyThisBucket: "Économie positive (NPV $22M vs. $8M vendor), faisabilité surmontable. La vraie question : cet avantage vaut-il d'être défendu ? Si McKinsey/BCG rattrapent en 18 mois, l'investissement ne se justifie plus.",
+      matchAnalysis: [
+        { dimension: "Différenciation", caseMatch: "12-18 mois d'avance. Fine-tuning 10 ans DD anonymisées = actif unique. +18% WTP = signal fort.", severity: "avantage-fort" },
+        { dimension: "Défendabilité", caseMatch: "23 deals = 23 datasets. À 200 deals/an, avance insurmontable. Mais LLMs open-source évoluent vite — moat se déprécie sans investissement.", severity: "haut" },
+        { dimension: "WTP", caseMatch: "+18% mais petit échantillon. Risque : fonds sophistiqués (Apollo, Blackstone) développent en interne. Fenêtre 3-5 ans.", severity: "moyen" },
+      ],
+    },
+    brainstorm: {
+      subProblem: "Comment transformer Bain Lens en barrière à l'entrée durable alors que le moat technique se déprécie avec les LLMs open-source ?",
+      ideas: [
+        { idea: "Data partnerships exclusifs PE", detail: "5 fonds fournissent données portfolio anonymisées en échange d'accès prioritaire. Chaque deal renforce le flywheel.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Extension post-deal", detail: "100-day plan, PMI tracking, portfolio analytics. Switching cost explose si intégré dans tout le cycle.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "SaaS spin-off Y3", detail: "Licenser aux fonds mid-market sans relationship Bain. $20M ARR potentiel. Risque cannibalisation.", impact: "Fort", feasibility: "Faible" },
+        { idea: "Acqui-hire legal NLP", detail: "Acquérir startup legal analytics pour combler la faiblesse et élargir le moat.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Pipeline MIT/Stanford", detail: "Fellowship applied ML for PE. ~$1M/an, pipeline talent exclusif 5 ans.", impact: "Moyen", feasibility: "Fort" },
+      ],
+    },
+    elevatorPitch: {
+      recommendation: "Scaler ($15M) + data moat via partnerships PE + extension verticale post-deal.",
+      arguments: [
+        "+18% WTP, 12-18 mois d'avance, data flywheel — avantage réel et mesurable",
+        "NPV $22M vs. $8M vendor — ROI justifié même scénario conservateur",
+        "Extension post-deal = plateforme intégrée dans tout le cycle",
+      ],
+      risks: [
+        { risk: "Recrutement ML (8 postes)", mitigation: "Pipeline académique + acqui-hire legal NLP = 3-4 postes" },
+        { risk: "LLMs open-source rattrapent", mitigation: "Moat dans les données pas le modèle — migrer foundation models" },
+        { risk: "Résistance partners", mitigation: "Multiplicateur de valeur par consultant, pas réducteur d'effectifs" },
+      ],
+      nextSteps: [
+        "Sem 1-4 : Pitcher 3 fonds pour data partnerships",
+        "Mois 2 : Recruter + lancer pipeline académique",
+        "Mois 3-6 : Résoudre faiblesse juridique",
+        "Mois 6 : 50 deals/an, R&D post-deal monitoring",
+      ],
+    },
+  },
+  {
+    id: 4, source: "ft", category: "Strategy / Industrial",
+    title: "ArcelorMittal relocalise sa R&D acier vert en Belgique — souveraineté industrielle",
+    date: "Mars 2026",
+    contexte: {
+      body: "Le CEO ArcelorMittal Europe demande l'allocation de €1.7Mrd entre Gand, Hambourg et Dunkerque pour l'acier vert H2. Subsides EU €300M conditionnés au démarrage avant Q1 2027. Demande estimée : 12Mt d'acier vert EU d'ici 2030. Break-even : H2 <€2.5/kg (actuellement €5-6, projection €2-3 en 2030). VW (1.2Mt, préfère Hambourg), Stellantis (0.8Mt, flexible), BMW (0.5Mt).",
+      keyFact: "€1.7Mrd à allouer, deadline board juin 2026",
+      clarifyingQs: [
+        { q: "Un seul site ou split ?", a: "Site 'champion' avec >60% pour éviter la dispersion, split possible." },
+        { q: "Situation H2 par site ?", a: "Gand : pipeline portuaire 2028. Hambourg : éolien offshore mais infra H2 -18 mois. Dunkerque : Air Liquide, timeline incertaine." },
+        { q: "Concurrents avancés ?", a: "H2 Green Steel (SE) : 2.5Mt fin 2026. ThyssenKrupp : pilote 0.4Mt. Tata (NL) : hors course 3-5 ans." },
+        { q: "Lettres d'intention clients ?", a: "VW 1.2Mt (Hambourg), Stellantis 0.8Mt (flexible), BMW 0.5Mt. Total 2.5Mt quasi-garanties." },
+      ],
+    },
+    framework: {
+      name: "Localisation Industrielle Stratégique",
+      why: "4 dimensions MECE : accès inputs (supply), accès marchés (demand), écosystème innovation, environnement institutionnel.",
+      branches: [
+        { label: "Inputs", children: [{ label: "H2 vert", detail: "Production locale, pipeline, coût/kg" }, { label: "Énergie", detail: "Prix élec, mix renouvelable" }, { label: "Minerai", detail: "Accès portuaire, coût logistique" }] },
+        { label: "Marchés", children: [{ label: "Clients auto", detail: "Proximité VW/Stellantis/BMW" }, { label: "Hub logistique", detail: "Port, rail, multimodal" }, { label: "Export", detail: "UK, Nordics, Benelux" }] },
+        { label: "Innovation", children: [{ label: "R&D", detail: "IMEC, KU Leuven, matériaux" }, { label: "Talents", detail: "Ingénieurs process, H2" }, { label: "Cluster", detail: "Fournisseurs spécialisés" }] },
+        { label: "Institutionnel", children: [{ label: "Subsides", detail: "Innovation Fund, tax shelter" }, { label: "Régulation", detail: "Permis, CBAM" }, { label: "Stabilité", detail: "Risque politique" }] },
+      ],
+    },
+    deepDive: {
+      chosenBucket: "Accès aux inputs",
+      whyThisBucket: "60-70% du coût de production = H2 vert. Le site avec le H2 le moins cher gagne structurellement. Les autres dimensions sont secondaires.",
+      matchAnalysis: [
+        { dimension: "H2 — Gand", caseMatch: "Pipeline portuaire 2028. Import H2 par bateau. Hub H2 Benelux. €2.8/kg en 2029.", severity: "avantage-fort" },
+        { dimension: "H2 — Hambourg", caseMatch: "Éolien offshore = production locale mais infra -18 mois vs Gand. €3.2/kg en 2029.", severity: "moyen" },
+        { dimension: "H2 — Dunkerque", caseMatch: "Air Liquide mais pas de FID. 1 seul opérateur = risque concentration. €3.0/kg, variance élevée.", severity: "haut" },
+        { dimension: "Énergie", caseMatch: "Gand : élec +25% vs EU (faiblesse) mais tax shelter R&D +15% compense. 3 sites portuaires.", severity: "neutre" },
+      ],
+    },
+    brainstorm: {
+      subProblem: "Sécuriser un coût H2 <€2.5/kg à Gand d'ici 2029 (projection €2.8/kg) — le break-even en dépend.",
+      ideas: [
+        { idea: "PPA multi-sources", detail: "3+ opérateurs H2 pour diversifier. 60% importé (bateau), 40% local (pipeline).", impact: "Fort", feasibility: "Fort" },
+        { idea: "Co-invest portuaire", detail: "€100-150M terminal H2 dédié avec North Sea Port. Tarif préférentiel 15 ans.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "H2 captif", detail: "50MW électrolyseurs sur site + PPA éolien offshore. Couvre 20-25% du besoin.", impact: "Moyen", feasibility: "Fort" },
+        { idea: "Lobby corridor H2 EU", detail: "European Hydrogen Backbone Gand-Rotterdam-Ruhr. ArcelorMittal = anchor tenant.", impact: "Fort", feasibility: "Faible" },
+        { idea: "DRI dual-fuel", detail: "Four H2 + gaz. Démarrer 2027 au gaz, switch progressif au H2.", impact: "Fort", feasibility: "Fort" },
+      ],
+    },
+    elevatorPitch: {
+      recommendation: "70% Gand (€1.2Mrd) DRI dual-fuel + sécurisation H2 multi-sources + co-invest portuaire. 30% Hambourg (€500M) hub commercial.",
+      arguments: [
+        "Gand = meilleur accès H2 EU. Surcoût élec compensé par tax shelter (+15%) + subsides EU (€300M)",
+        "DRI dual-fuel : production dès 2027 au gaz, migration H2 progressive — élimine risque timing",
+        "Co-invest portuaire €150M : tarif H2 préférentiel 15 ans, anchor tenant du hub",
+      ],
+      risks: [
+        { risk: "H2 ne passe pas sous €2.5/kg avant 2031", mitigation: "DRI dual-fuel → produire au gaz en attendant" },
+        { risk: "H2 Green Steel capte premiers contrats", mitigation: "LOI VW/Stellantis (2.0Mt) sécurisent la demand" },
+        { risk: "Instabilité politique belge", mitigation: "€300M Innovation Fund sanctuarisés EU. Tax shelter = structurel" },
+      ],
+      nextSteps: [
+        "Mois 1 : Faisabilité DRI dual-fuel",
+        "Mois 2 : PPA H2 avec Air Liquide, Lhyfe, Plug Power",
+        "Mois 3 : Business case board Gand 70% / Hambourg 30%",
+        "Mois 4-6 : Co-invest portuaire avant deadline Innovation Fund",
+      ],
+    },
+  },
+  {
+    id: 5, source: "lesoir", category: "Consulting / Talent Strategy",
+    title: "War for talent en consulting belge : pourquoi les Big4 perdent face aux boutiques",
+    date: "Février 2026",
+    contexte: {
+      body: "Le Country Managing Partner de Deloitte Belgique vous mandate. Turnover 25% chez les 2-4 ans d'XP vs. 12% en boutique. Exit interviews : manque d'impact (42%), distance C-level (28%), heures/rémunération (18%), promotion lente (12%). 60% partent en boutique, 25% en industrie, 15% PE/VC. Strategy & M&A : 32% turnover (pire). Coût : 150 départs/an × €45K = €6.7M/an. Budget rétention : €2M/an. EY a testé un bonus rétention 3 ans → seulement -2pts.",
+      keyFact: "€6.7M/an de coût — budget rétention €2M = 3.3x ROI à capturer",
+      clarifyingQs: [
+        { q: "Turnover uniforme ?", a: "Strategy & M&A : 32%. Audit/Tax : 18%. Tech : 24%. Top performers partent 2x plus." },
+        { q: "Package boutiques vs Big4 ?", a: "Brut -10-15% en boutique. Mais heures -20-25%, donc taux horaire effectif comparable." },
+        { q: "Effet réseau ?", a: "1 senior part → 2-3 juniors suivent en 6 mois. Alumni en boutique recrutent activement." },
+        { q: "Qu'ont fait les autres Big4 ?", a: "EY : bonus rétention → -2pts (décevant). PwC : sabbaticals. KPMG : rien." },
+      ],
+    },
+    framework: {
+      name: "Push × Pull × Friction",
+      why: "3 forces MECE : Push (repousse du Big4), Pull (attire vers boutiques), Friction (facilite ou freine le départ). Un seul axe = insuffisant.",
+      branches: [
+        { label: "Push", children: [{ label: "Meaningfulness gap", detail: "% temps delivery standardisé vs. stratégique" }, { label: "Distance C-level", detail: "Années avant de présenter au client" }, { label: "Rendements décroissants", detail: "Effort vs. impact perçu" }] },
+        { label: "Pull", children: [{ label: "Exposition client", detail: "CEO/CFO dès la 2e année en boutique" }, { label: "Variété", detail: "Rotation rapide industries" }, { label: "Ownership", detail: "Responsabilité, autonomie" }] },
+        { label: "Friction", children: [{ label: "Switching cost", detail: "Ce qu'on perd en partant" }, { label: "Offre marché", detail: "Postes ouverts boutique BE" }, { label: "Social proof", detail: "Cascade des départs" }] },
+      ],
+    },
+    deepDive: {
+      chosenBucket: "Push (quitter le Big4)",
+      whyThisBucket: "Pull difficile à contrer (boutiques resteront attractives). Friction = levier négatif (golden handcuffs toxiques). Push = seul axe où Deloitte contrôle l'expérience quotidienne du consultant.",
+      matchAnalysis: [
+        { dimension: "Meaningfulness gap", caseMatch: "S&M (32% turnover) : ~60% temps sur delivery standardisé vs. 35% en boutique. Le leverage 1:15 force la délégation tâches faible valeur.", severity: "critique" },
+        { dimension: "Distance C-level", caseMatch: "2 ans Deloitte : jamais présenté au client. 3 mois chez Argon & Co : déjà en réunion C-level. 'Je veux voir l'impact, pas l'envoyer dans un void'.", severity: "critique" },
+        { dimension: "Rendements décroissants", caseMatch: "Heures 55-60h mais ratio impact/heure chute après 18 mois. Le 3e année fait le même travail qu'en 2e année avec plus de volume.", severity: "haut" },
+      ],
+    },
+    brainstorm: {
+      subProblem: "Comment réduire meaningfulness gap + distance C-level dans un modèle leverage 1:15 conçu pour éloigner les juniors du client ?",
+      ideas: [
+        { idea: "Strategic pods (4-6 pers.)", detail: "10 équipes permanentes, Partner + client C-level. Présentation client mois 1. Benchmark Accenture : -8pts.", impact: "Fort", feasibility: "Fort" },
+        { idea: "Rotation 3 industries / 2 ans", detail: "Rotation planifiée au lieu du staffing aléatoire.", impact: "Moyen", feasibility: "Fort" },
+        { idea: "'CEO Shadow'", detail: "5 consultants/trim en immersion 2 sem chez client C-level. Coût ~nul.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Automatiser 30% delivery", detail: "Slides, data cleaning, benchmarks via IA. Libérer temps haute valeur. ~€500K.", impact: "Fort", feasibility: "Moyen" },
+        { idea: "Alumni network premium", detail: "Meilleur programme alumni = fierté d'appartenance = ralentit les départs.", impact: "Moyen", feasibility: "Fort" },
+      ],
+    },
+    elevatorPitch: {
+      recommendation: "Programme 'Impact First' : 10 Strategic Pods + automatisation 30% delivery. Budget €700K = 10x ROI vs. turnover.",
+      arguments: [
+        "Pods adressent les 2 premiers drivers (meaningfulness + C-level) — Accenture : -8pts turnover",
+        "Automatisation libère 15-20h/sem pour travail haute valeur — change la proposition sans changer le leverage",
+        "€700K = 10% du coût turnover (€6.7M). Même -5pts = €2.2M d'économies",
+      ],
+      risks: [
+        { risk: "Résistance Partners", mitigation: "Pilote 3 Partners S&M volontaires, résultats en 6 mois" },
+        { risk: "Pods créent des fiefdoms", mitigation: "Rotation semestrielle des consultants entre pods" },
+        { risk: "Cascade continue", mitigation: "CEO Shadow en parallèle = signal fort immédiat" },
+      ],
+      nextSteps: [
+        "Sem 1-2 : 3 Partners S&M volontaires",
+        "Mois 1 : 3 premiers pods avec brief client",
+        "Mois 2 : Audit delivery automatisable",
+        "Mois 6 : Mesurer turnover pods vs. reste → scale",
+      ],
+    },
+  },
+];
+
+const fonts = `@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap');`;
+
+/* ─── Sub-components ─── */
+
+function ClarifyingQuestions({ questions, sc, sa }) {
+  const [rev, setRev] = useState({});
+  useEffect(() => setRev({}), [questions]);
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ fontFamily: "M,monospace", fontSize: 9, fontWeight: 500, color: sc, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>Questions clarificatrices</div>
+      {questions.map((item, i) => (
+        <div key={i} style={{ borderRadius: 9, overflow: "hidden", border: `1px solid ${rev[i] ? sc + "25" : "rgba(255,255,255,0.06)"}`, background: rev[i] ? `${sc}06` : "rgba(255,255,255,0.02)", transition: "all .3s", marginBottom: 6 }}>
+          <button onClick={(e) => { e.stopPropagation(); setRev(p => ({ ...p, [i]: !p[i] })); }}
+            style={{ width: "100%", padding: "9px 11px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 7, textAlign: "left" }}>
+            <span style={{ fontFamily: "M,monospace", fontSize: 9, color: sa, fontWeight: 500, flexShrink: 0, marginTop: 1 }}>Q{i + 1}</span>
+            <span style={{ fontFamily: "S,sans-serif", fontSize: 11.5, color: "#F0EDE8", lineHeight: 1.45 }}>{item.q}</span>
+            <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 11, color: "rgba(255,255,255,.3)", transition: "transform .3s", transform: rev[i] ? "rotate(90deg)" : "rotate(0)" }}>›</span>
+          </button>
+          {rev[i] && <div style={{ padding: "0 11px 9px 32px" }}><p style={{ fontFamily: "S,sans-serif", fontSize: 11, lineHeight: 1.55, color: "rgba(240,237,232,.52)", fontWeight: 300, borderLeft: `2px solid ${sc}30`, paddingLeft: 9 }}>{item.a}</p></div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StepContent({ c, si, sc, sa }) {
+  const sevC = { critique: "#FF4444", haut: "#FF8C42", moyen: "#FFD166", "quick-win": "#06D6A0", "avantage-fort": "#06D6A0", neutre: "#888" };
+  const impC = { Fort: "#06D6A0", Moyen: "#FFD166", Faible: "#FF8C42" };
+  const F = "'Space Grotesk',sans-serif";
+  const M = "'IBM Plex Mono',monospace";
+  const N = "'Newsreader',serif";
+
+  if (si === 0) return (
+    <div>
+      <p style={{ fontFamily: F, fontSize: 13, lineHeight: 1.72, color: "rgba(240,237,232,.68)", fontWeight: 300, marginBottom: 12 }}>{c.contexte.body}</p>
+      {c.contexte.keyFact && <div style={{ padding: "9px 12px", borderRadius: 9, background: `linear-gradient(135deg,${sc}08,${sc}03)`, border: `1px solid ${sc}15`, marginBottom: 2 }}>
+        <div style={{ fontFamily: M, fontSize: 8, fontWeight: 500, color: sc, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 3 }}>Key Fact</div>
+        <div style={{ fontFamily: F, fontSize: 12, fontWeight: 500, color: sa, lineHeight: 1.45 }}>{c.contexte.keyFact}</div>
+      </div>}
+      <ClarifyingQuestions questions={c.contexte.clarifyingQs} sc={sc} sa={sa} />
+    </div>
+  );
+
+  if (si === 1) return (
+    <div>
+      <div style={{ marginBottom: 12, padding: "13px 15px", borderRadius: 13, background: `linear-gradient(135deg,${sc}15,${sc}05)`, border: `1px solid ${sc}28`, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.03, backgroundImage: `linear-gradient(${sc} 1px,transparent 1px),linear-gradient(90deg,${sc} 1px,transparent 1px)`, backgroundSize: "16px 16px", pointerEvents: "none" }} />
+        <div style={{ fontFamily: M, fontSize: 9, fontWeight: 500, color: sc, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 5, position: "relative" }}>△ Framework</div>
+        <div style={{ fontFamily: N, fontSize: 17, color: "#F0EDE8", lineHeight: 1.3, position: "relative", fontWeight: 500 }}>{c.framework.name}</div>
+      </div>
+      <p style={{ fontFamily: F, fontSize: 11.5, lineHeight: 1.55, color: "rgba(240,237,232,.45)", fontWeight: 300, marginBottom: 14, fontStyle: "italic", paddingLeft: 11, borderLeft: `2px solid ${sc}22` }}>{c.framework.why}</p>
+      {c.framework.branches.map((b, i) => (
+        <div key={i} style={{ marginBottom: 10 }}>
+          <div style={{ padding: "7px 11px", borderRadius: 7, background: `${sc}12`, border: `1px solid ${sc}22`, display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+            <div style={{ width: 5, height: 5, borderRadius: 2, background: sa, flexShrink: 0 }} />
+            <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 600, color: "#F0EDE8" }}>{b.label}</span>
+          </div>
+          {b.children && <div style={{ paddingLeft: 12, borderLeft: `1px solid ${sc}12`, marginLeft: 9 }}>
+            {b.children.map((ch, j) => (
+              <div key={j} style={{ padding: "6px 9px", marginTop: 3, borderRadius: 6, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                  <div style={{ width: 3, height: 3, borderRadius: "50%", background: `${sc}55` }} />
+                  <span style={{ fontFamily: F, fontSize: 10.5, fontWeight: 500, color: "rgba(240,237,232,.75)" }}>{ch.label}</span>
+                </div>
+                <p style={{ fontFamily: F, fontSize: 9.5, lineHeight: 1.45, color: "rgba(240,237,232,.35)", fontWeight: 300, paddingLeft: 8 }}>{ch.detail}</p>
+              </div>
+            ))}
+          </div>}
+        </div>
+      ))}
+    </div>
+  );
+
+  if (si === 2) return (
+    <div>
+      <div style={{ padding: "10px 13px", borderRadius: 10, background: `${sc}12`, border: `1px solid ${sc}28`, marginBottom: 10 }}>
+        <div style={{ fontFamily: M, fontSize: 8, color: sc, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 4 }}>Bucket prioritaire</div>
+        <div style={{ fontFamily: F, fontSize: 14, fontWeight: 600, color: sa }}>{c.deepDive.chosenBucket}</div>
+      </div>
+      <p style={{ fontFamily: F, fontSize: 12, lineHeight: 1.65, color: "rgba(240,237,232,.55)", fontWeight: 300, marginBottom: 14, fontStyle: "italic" }}>{c.deepDive.whyThisBucket}</p>
+      <div style={{ fontFamily: M, fontSize: 8, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>Match case</div>
+      {c.deepDive.matchAnalysis.map((m, i) => (
+        <div key={i} style={{ padding: "10px 12px", borderRadius: 9, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", marginBottom: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+            <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 600, color: "#F0EDE8" }}>{m.dimension}</span>
+            <span style={{ fontFamily: M, fontSize: 8, color: sevC[m.severity], padding: "2px 6px", borderRadius: 4, background: sevC[m.severity] + "15", border: `1px solid ${sevC[m.severity]}30`, textTransform: "uppercase" }}>{m.severity}</span>
+          </div>
+          <p style={{ fontFamily: F, fontSize: 11, lineHeight: 1.55, color: "rgba(240,237,232,.55)", fontWeight: 300 }}>{m.caseMatch}</p>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (si === 3) return (
+    <div>
+      <div style={{ padding: "10px 13px", borderRadius: 10, background: `${sc}08`, border: `1px solid ${sc}18`, marginBottom: 14 }}>
+        <div style={{ fontFamily: M, fontSize: 8, color: sc, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 4 }}>Sous-problématique</div>
+        <p style={{ fontFamily: F, fontSize: 12, lineHeight: 1.55, color: "rgba(240,237,232,.7)" }}>{c.brainstorm.subProblem}</p>
+      </div>
+      {c.brainstorm.ideas.map((item, i) => (
+        <div key={i} style={{ padding: "10px 12px", borderRadius: 9, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", marginBottom: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontFamily: F, fontSize: 11.5, fontWeight: 600, color: "#F0EDE8" }}>{item.idea}</span>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[["I", item.impact], ["F", item.feasibility]].map(([l, v]) => (
+                <span key={l} style={{ fontFamily: M, fontSize: 7.5, color: impC[v], padding: "1px 5px", borderRadius: 3, background: impC[v] + "15", border: `1px solid ${impC[v]}25` }}>{l}:{v[0]}</span>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontFamily: F, fontSize: 10.5, lineHeight: 1.5, color: "rgba(240,237,232,.45)", fontWeight: 300 }}>{item.detail}</p>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (si === 4) {
+    const ep = c.elevatorPitch;
+    return (
+      <div>
+        <div style={{ padding: "12px 14px", borderRadius: 11, background: `linear-gradient(135deg,${sc}15,${sc}06)`, border: `1px solid ${sc}30`, marginBottom: 14 }}>
+          <div style={{ fontFamily: M, fontSize: 8, color: sc, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 5 }}>Recommandation</div>
+          <p style={{ fontFamily: F, fontSize: 12.5, lineHeight: 1.55, color: "#F0EDE8", fontWeight: 500 }}>{ep.recommendation}</p>
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontFamily: M, fontSize: 8, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 6 }}>Arguments</div>
+          {ep.arguments.map((a, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontFamily: M, fontSize: 10, color: "#06D6A0", fontWeight: 500, flexShrink: 0, marginTop: 2 }}>{i + 1}.</span>
+              <p style={{ fontFamily: F, fontSize: 11, lineHeight: 1.55, color: "rgba(240,237,232,.65)", fontWeight: 300 }}>{a}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontFamily: M, fontSize: 8, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 6 }}>Risques & mitigations</div>
+          {ep.risks.map((r, i) => (
+            <div key={i} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", marginBottom: 5 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 4 }}>
+                <span style={{ color: "#FF6B6B", fontSize: 9, flexShrink: 0, marginTop: 2 }}>⚠</span>
+                <span style={{ fontFamily: F, fontSize: 10.5, color: "rgba(240,237,232,.7)", fontWeight: 500 }}>{r.risk}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6, paddingLeft: 15 }}>
+                <span style={{ color: "#06D6A0", fontSize: 9, flexShrink: 0, marginTop: 2 }}>→</span>
+                <span style={{ fontFamily: F, fontSize: 10, color: "rgba(240,237,232,.45)", fontWeight: 300, lineHeight: 1.5 }}>{r.mitigation}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontFamily: M, fontSize: 8, color: "rgba(255,255,255,.3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 6 }}>Next Steps</div>
+          {ep.nextSteps.map((s, i) => (
+            <div key={i} style={{ display: "flex", gap: 7, marginBottom: 5 }}>
+              <span style={{ fontFamily: M, fontSize: 9, color: sa, fontWeight: 500, flexShrink: 0, marginTop: 2 }}>→</span>
+              <p style={{ fontFamily: F, fontSize: 10.5, lineHeight: 1.5, color: "rgba(240,237,232,.55)", fontWeight: 300 }}>{s}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+/* ─── Main ─── */
+export default function StrategyFeed() {
+  const [mode, setMode] = useState("feed"); // "feed" | "case"
+  const [ci, setCi] = useState(0);
+  const [si, setSi] = useState(0);
+  const [anim, setAnim] = useState(false);
+  const [animDir, setAnimDir] = useState(null);
+  const [lastTap, setLastTap] = useState(0);
+  const touchRef = useRef(null);
+  const contentRef = useRef(null);
+  const scrollRef = useRef(null);
+  const nC = CASES.length;
+  const nS = 5;
+  const c = CASES[ci];
+  const src = SOURCES[c.source];
+
+  // Scroll to top on step or case change
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [si, ci, mode]);
+
+  /* ─── Touch handling ─── */
+  const handleTouchStart = (e) => {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), scrollTop: (mode === "feed" ? scrollRef.current?.scrollTop : contentRef.current?.scrollTop) || 0 };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchRef.current || anim) return;
+    const dx = e.changedTouches[0].clientX - touchRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchRef.current.y;
+    const dt = Date.now() - touchRef.current.t;
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+
+    if (mode === "feed") {
+      // Tap detection (small movement, quick)
+      if (ax < 15 && ay < 15 && dt < 300) {
+        setMode("case"); setSi(0);
+        touchRef.current = null;
+        return;
+      }
+      // Swipe down → next case (finger moves up)
+      if (ay > ax && ay > 80 && dt < 600) {
+        if (dy < 0 && ci < nC - 1) {
+          setAnimDir("up"); setAnim(true);
+          setTimeout(() => { setCi(ci + 1); setAnimDir(null); setAnim(false); }, 380);
+        } else if (dy > 0 && ci > 0) {
+          setAnimDir("down"); setAnim(true);
+          setTimeout(() => { setCi(ci - 1); setAnimDir(null); setAnim(false); }, 380);
+        }
+      }
+    }
+
+    if (mode === "case") {
+      // Double tap detection
+      const now = Date.now();
+      if (ax < 15 && ay < 15 && dt < 300) {
+        if (now - lastTap < 400) {
+          setMode("feed"); setSi(0); setLastTap(0);
+          touchRef.current = null;
+          return;
+        }
+        setLastTap(now);
+      }
+
+      // Horizontal swipe → change step
+      if (ax > ay * 1.3 && ax > 60 && dt < 500) {
+        if (dx < 0 && si < nS - 1) {
+          setAnimDir("sleft"); setAnim(true);
+          setTimeout(() => { setSi(si + 1); setAnimDir(null); setAnim(false); }, 280);
+        } else if (dx > 0 && si > 0) {
+          setAnimDir("sright"); setAnim(true);
+          setTimeout(() => { setSi(si - 1); setAnimDir(null); setAnim(false); }, 280);
+        }
+      }
+    }
+    touchRef.current = null;
+  };
+
+  // Keyboard
+  useEffect(() => {
+    const h = (e) => {
+      if (mode === "feed") {
+        if (e.key === "ArrowDown" && ci < nC - 1) { e.preventDefault(); setAnimDir("up"); setAnim(true); setTimeout(() => { setCi(ci + 1); setAnimDir(null); setAnim(false); }, 380); }
+        if (e.key === "ArrowUp" && ci > 0) { e.preventDefault(); setAnimDir("down"); setAnim(true); setTimeout(() => { setCi(ci - 1); setAnimDir(null); setAnim(false); }, 380); }
+        if (e.key === "Enter") { setMode("case"); setSi(0); }
+      }
+      if (mode === "case") {
+        if (e.key === "ArrowRight" && si < nS - 1) { e.preventDefault(); setAnimDir("sleft"); setAnim(true); setTimeout(() => { setSi(si + 1); setAnimDir(null); setAnim(false); }, 280); }
+        if (e.key === "ArrowLeft" && si > 0) { e.preventDefault(); setAnimDir("sright"); setAnim(true); setTimeout(() => { setSi(si - 1); setAnimDir(null); setAnim(false); }, 280); }
+        if (e.key === "Escape") { setMode("feed"); setSi(0); }
+      }
+    };
+    window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h);
+  }, [mode, ci, si, nC, nS]);
+
+  const cardTx = animDir === "up" ? "translateY(-105%)" : animDir === "down" ? "translateY(105%)" : "translateY(0)";
+  const stepOp = animDir === "sleft" || animDir === "sright" ? 0 : 1;
+
+  /* ─── FEED MODE ─── */
+  if (mode === "feed") return (
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
+      style={{ width: "100%", height: "100vh", background: "#08080A", overflow: "hidden", position: "relative", fontFamily: "'Space Grotesk',sans-serif", userSelect: "none" }}>
+      <style>{fonts}</style>
+      <style>{`
+        *{box-sizing:border-box;margin:0;padding:0}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .cs::-webkit-scrollbar{width:2px}.cs::-webkit-scrollbar-track{background:transparent}.cs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+      `}</style>
+      <div style={{ position: "absolute", top: "-30%", left: "-20%", width: "140%", height: "55%", background: `radial-gradient(ellipse at center, ${src.color}12 0%, transparent 70%)`, pointerEvents: "none", transition: "background .5s" }} />
+
+      {/* Top bar */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, padding: "14px 18px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,#E63946,#7B68EE)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>△</span>
+            </div>
+            <span style={{ fontFamily: "'Newsreader',serif", fontSize: 17, fontWeight: 500, color: "#F0EDE8" }}>Strategy Feed</span>
+          </div>
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: "rgba(255,255,255,.25)" }}>{ci + 1}/{nC}</span>
+        </div>
+      </div>
+
+      {/* Full screen card */}
+      <div style={{
+        position: "absolute", top: 52, left: 14, right: 14, bottom: 60,
+        transform: cardTx,
+        transition: anim ? "transform .38s cubic-bezier(.22,1,.36,1), opacity .38s" : "none",
+        opacity: anim ? 0 : 1,
+      }}>
+        <div style={{
+          width: "100%", height: "100%", borderRadius: 18,
+          background: "linear-gradient(165deg, #111114 0%, #0C0C0F 50%, #0F0F13 100%)",
+          border: `1px solid ${src.color}20`,
+          display: "flex", flexDirection: "column", overflow: "hidden", position: "relative",
+        }}>
+          <div style={{ position: "absolute", top: 0, right: 0, width: 100, height: 100, background: `radial-gradient(circle at top right, ${src.color}14 0%, transparent 70%)`, pointerEvents: "none" }} />
+
+          {/* Card header */}
+          <div style={{ padding: "20px 20px 0", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: src.color, boxShadow: `0 0 8px ${src.color}60` }} />
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 500, color: src.accent, letterSpacing: ".06em", textTransform: "uppercase" }}>{src.name}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.2)" }}>{c.date}</span>
+              <div style={{ marginLeft: "auto", padding: "2px 8px", borderRadius: 4, background: `${src.color}10`, border: `1px solid ${src.color}18` }}>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: src.accent, textTransform: "uppercase" }}>{c.category}</span>
+              </div>
+            </div>
+            <h1 style={{ fontFamily: "'Newsreader',serif", fontSize: "clamp(17px, 4vw, 24px)", fontWeight: 500, color: "#F0EDE8", lineHeight: 1.28, marginBottom: 14 }}>{c.title}</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: src.color, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>◉ Contexte</div>
+          </div>
+
+          {/* Scrollable contexte */}
+          <div ref={scrollRef} className="cs" style={{ flex: 1, overflow: "auto", padding: "0 20px 20px", WebkitOverflowScrolling: "touch" }}>
+            <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, lineHeight: 1.72, color: "rgba(240,237,232,.65)", fontWeight: 300, marginBottom: 12 }}>{c.contexte.body}</p>
+            {c.contexte.keyFact && <div style={{ padding: "9px 12px", borderRadius: 9, background: `linear-gradient(135deg,${src.color}08,${src.color}03)`, border: `1px solid ${src.color}15`, marginBottom: 2 }}>
+              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, fontWeight: 500, color: src.color, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 3 }}>Key Fact</div>
+              <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 12, fontWeight: 500, color: src.accent, lineHeight: 1.45 }}>{c.contexte.keyFact}</div>
+            </div>}
+            <ClarifyingQuestions questions={c.contexte.clarifyingQs} sc={src.color} sa={src.accent} />
+
+            {/* CTA */}
+            <div style={{ marginTop: 20, padding: "14px", borderRadius: 12, background: `${src.color}10`, border: `1px solid ${src.color}25`, textAlign: "center" }}>
+              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 500, color: src.accent }}>Tap pour résoudre ce case →</span>
+              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.25)", marginTop: 4 }}>Framework · Deep Dive · Brainstorm · Pitch</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom nav dots + hint */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 20px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", gap: 5 }}>
+            {CASES.map((_, i) => (
+              <div key={i} style={{ width: i === ci ? 18 : 6, height: 6, borderRadius: 3, background: i === ci ? SOURCES[CASES[i].source].color : "rgba(255,255,255,.12)", transition: "all .3s" }} />
+            ))}
+          </div>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.15)" }}>↕ swipe · tap pour ouvrir</span>
+      </div>
+    </div>
+  );
+
+  /* ─── CASE MODE ─── */
+  const prog = ((si + 1) / nS) * 100;
+
+  return (
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
+      style={{ width: "100%", height: "100vh", background: "#08080A", overflow: "hidden", fontFamily: "'Space Grotesk',sans-serif", userSelect: "none", display: "flex", flexDirection: "column" }}>
+      <style>{fonts}</style>
+      <style>{`
+        *{box-sizing:border-box;margin:0;padding:0}
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .cs::-webkit-scrollbar{width:2px}.cs::-webkit-scrollbar-track{background:transparent}.cs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+      `}</style>
+      <div style={{ position: "absolute", top: "-30%", left: "-20%", width: "140%", height: "55%", background: `radial-gradient(ellipse at center, ${src.color}12 0%, transparent 70%)`, pointerEvents: "none" }} />
+
+      {/* Top */}
+      <div style={{ padding: "14px 18px 0", flexShrink: 0, zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <button onClick={() => { setMode("feed"); setSi(0); }}
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ color: "rgba(255,255,255,.5)", fontSize: 13 }}>‹</span>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,.4)", textTransform: "uppercase" }}>Feed</span>
+          </button>
+          <div style={{ flex: 1, height: 2.5, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${prog}%`, background: `linear-gradient(90deg,${src.color},${src.accent})`, borderRadius: 2, transition: "width .4s" }} />
+          </div>
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.2)" }}>{si + 1}/{nS}</span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: src.color }} />
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: src.accent, textTransform: "uppercase" }}>{src.name}</span>
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,.18)" }}>{c.category}</span>
+        </div>
+
+        <h1 style={{ fontFamily: "'Newsreader',serif", fontSize: "clamp(15px, 3.5vw, 20px)", fontWeight: 500, color: "#F0EDE8", lineHeight: 1.28, marginBottom: 10 }}>{c.title}</h1>
+
+        <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
+          {STEP_LABELS.map((l, i) => (
+            <button key={i} onClick={() => { if (!anim) { setAnimDir(i > si ? "sleft" : "sright"); setAnim(true); setTimeout(() => { setSi(i); setAnimDir(null); setAnim(false); }, 250); } }}
+              style={{ flex: 1, padding: "5px 2px", borderRadius: 5, border: "none", background: i === si ? `linear-gradient(135deg,${src.color}28,${src.color}12)` : "rgba(255,255,255,0.025)", cursor: "pointer", position: "relative", overflow: "hidden" }}>
+              {i === si && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: src.color }} />}
+              <span style={{ display: "block", fontFamily: "'IBM Plex Mono',monospace", fontSize: 7.5, fontWeight: i === si ? 600 : 400, color: i === si ? src.accent : i < si ? "rgba(255,255,255,.3)" : "rgba(255,255,255,.15)", textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {STEP_ICONS[i]} {l}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div ref={contentRef} className="cs" key={`${ci}-${si}`}
+        style={{ flex: 1, overflow: "auto", padding: "14px 20px 40px", WebkitOverflowScrolling: "touch", opacity: stepOp, transition: "opacity .2s", animation: stepOp === 1 ? "fadeInUp .3s ease" : "none" }}>
+        <StepContent c={c} si={si} sc={src.color} sa={src.accent} />
+      </div>
+
+      {/* Bottom */}
+      <div style={{ padding: "8px 20px 14px", flexShrink: 0, display: "flex", justifyContent: "center", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.15)" }}>↔ swipe étapes · double tap pour revenir</span>
+      </div>
+    </div>
+  );
+}
